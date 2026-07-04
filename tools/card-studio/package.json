@@ -1,0 +1,18 @@
+{
+  "name": "zaubertisch-card-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lokaler Card-Generator für das Spiel Zaubertisch. Setzt aus vorhandenen PNG-Basisgrafiken ein komplettes Wizard-Kartendeck (60 Karten, 750x1125 px) zusammen.",
+  "type": "commonjs",
+  "main": "build-cards.js",
+  "scripts": {
+    "build": "node build-cards.js",
+    "start": "node build-cards.js"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "sharp": "^0.33.5"
+  }
+}
