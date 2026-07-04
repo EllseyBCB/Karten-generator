@@ -213,15 +213,13 @@ jeweils **750 × 1125 px**.
 ## 5. Kartenaufbau
 
 **Zahlenkarten:**
-- große Zahl oben links
-- kleine (um 180° gedrehte) Zahl unten rechts
+- Zahl in **allen vier Ecken** (oben aufrecht, unten um 180° gedreht –
+  aus jeder Blickrichtung lesbar)
+- kleines Suit-Symbol direkt an jeder Eck-Zahl
 - großes Symbol mittig
-- kleines Symbol oben links, unter der großen Zahl
-- kleines Symbol unten rechts, über der kleinen Zahl
 
 **Zauberer / Narr:**
-- großes **Z** bzw. **N** oben links
-- kleines, um 180° gedrehtes **Z** bzw. **N** unten rechts
+- **Z** bzw. **N** in **allen vier Ecken** (oben aufrecht, unten gedreht)
 - Figur mittig
 - Beschriftung unten: **ZAUBERER** bzw. **NARR**
 
@@ -231,11 +229,11 @@ jeweils **750 × 1125 px**.
 
 Positionen, Größen und Farben lassen sich zentral in `build-cards.js`
 oben im Objekt `LAYOUT` ändern:
-- `bigGlyphImg` / `smallGlyphImg` – Zielhöhe und Position der goldenen
-  Glyphen oben links bzw. unten rechts (Bild-Modus).
-- `bigGlyph` / `smallGlyph` – dieselben Angaben für den Vektor-Fallback.
-- `centerSymbol`, `centerFigure`, `smallSymTopLeft`,
-  `smallSymBottomRight`, `label` – Symbole, Figuren und Beschriftung.
+- `corner` – Zahl in den vier Ecken: `height` (Glyphengröße), `marginX`/
+  `marginY` (Randabstand), `pipBox`/`pipGap` (kleines Suit-Symbol),
+  `withPip` (Symbol an der Ecke an/aus).
+- `centerSymbol`, `centerFigure`, `label` – Symbol/Figur mittig und
+  Beschriftung.
 
 Farben/Schrift der Beschriftung: `GOLD`, `GOLD_DARK`, `STROKE`,
 `FONT_FAMILY`. Danach einfach `npm start` erneut ausführen.

@@ -60,26 +60,32 @@ const FONT_FAMILY =
  * ------------------------------------------------------------------ */
 
 const LAYOUT = {
-  // --- Glyphen als SVG-Text (Fallback, wenn keine Glyph-Bilder da sind) ---
-  bigGlyph: { x: 62, baseline: 190, size: 205 },
-  // Kleine Glyphe unten rechts (um 180° gedreht, wie bei Spielkarten)
-  smallGlyph: { cx: 648, cy: 955, size: 112 },
-
-  // --- Glyphen als goldene Bild-Grafiken (input/glyphs/*.png) ---
-  // Große Glyphe oben links: Zielhöhe + Position der oberen linken Ecke.
-  bigGlyphImg: { height: 168, x: 56, y: 46 },
-  // Kleine Glyphe unten rechts: Zielhöhe + Ränder (wird um 180° gedreht).
-  smallGlyphImg: { height: 100, marginRight: 58, marginBottom: 92 },
-  // Kleines Symbol oben links (unter der großen Zahl)
-  smallSymTopLeft: { x: 66, y: 210, box: 92 },
-  // Kleines Symbol unten rechts (über der kleinen Zahl)
-  smallSymBottomRight: { x: WIDTH - 66 - 92, y: HEIGHT - 210 - 92, box: 92 },
+  // Glyphe (Zahl bzw. Z/N) in JEDER der vier Ecken.
+  // Oben aufrecht, unten um 180° gedreht – wie bei Spielkarten, damit die
+  // Zahl aus jeder Blickrichtung lesbar ist.
+  corner: {
+    height: 126,   // Zielhöhe der Eck-Glyphe (Bild-Modus)
+    svgSize: 120,  // Schriftgröße im SVG-Fallback
+    marginX: 48,   // Abstand vom linken/rechten Kartenrand
+    marginY: 44,   // Abstand vom oberen/unteren Kartenrand
+    pipBox: 60,    // kleines Suit-Symbol direkt an der Zahl
+    pipGap: 12,    // Abstand Zahl ↔ Symbol
+    withPip: true, // Zahlenkarten: kleines Symbol an jeder Ecke
+  },
   // Großes Symbol / Figur mittig
-  centerSymbol: { box: 380 },
-  centerFigure: { boxW: 480, boxH: 640, top: 275 },
+  centerSymbol: { box: 360 },
+  centerFigure: { boxW: 480, boxH: 620, top: 300 },
   // Label unten (ZAUBERER / NARR)
-  label: { baseline: 1052, size: 74 },
+  label: { baseline: 1050, size: 66 },
 };
+
+// Die vier Ecken: Ausrichtung + Drehung.
+const CORNERS = [
+  { id: 'TL', rot: 0, xAlign: 'left', yAlign: 'top' },
+  { id: 'TR', rot: 0, xAlign: 'right', yAlign: 'top' },
+  { id: 'BL', rot: 180, xAlign: 'left', yAlign: 'bottom' },
+  { id: 'BR', rot: 180, xAlign: 'right', yAlign: 'bottom' },
+];
 
 /* ------------------------------------------------------------------ *
  *  Benötigte Input-Dateien
@@ -130,20 +136,38 @@ function centerInBox(img, x, y, boxW, boxH) {
 }
 
 /**
- * Erzeugt das Text-Overlay (SVG in Kartengröße) mit:
- *  - großer Glyphe oben links
- *  - kleiner, um 180° gedrehter Glyphe unten rechts
- *  - optionalem Label unten (ZAUBERER / NARR)
+ * Erzeugt das Text-Overlay (SVG in Kartengröße) mit der Glyphe in ALLEN
+ * vier Ecken (oben aufrecht, unten um 180° gedreht) und optionalem Label.
+ * Wird nur als Fallback genutzt, wenn keine Glyph-Bilder vorhanden sind.
  */
-function textOverlaySVG(bigGlyph, smallGlyph, label) {
-  const bg = LAYOUT.bigGlyph;
-  const sg = LAYOUT.smallGlyph;
+function textOverlaySVG(glyph, label) {
+  const C = LAYOUT.corner;
   const lb = LAYOUT.label;
+  const g = esc(glyph);
+
+  const cornerText = (corner) => {
+    const x = corner.xAlign === 'left' ? C.marginX : WIDTH - C.marginX;
+    const y =
+      corner.yAlign === 'top'
+        ? C.marginY + C.svgSize / 2
+        : HEIGHT - C.marginY - C.svgSize / 2;
+    // Nach 180°-Drehung kehrt sich die Textausrichtung um – deshalb unten
+    // die jeweils gegenteilige Verankerung wählen.
+    let anchor;
+    if (corner.rot === 0) anchor = corner.xAlign === 'left' ? 'start' : 'end';
+    else anchor = corner.xAlign === 'left' ? 'end' : 'start';
+    return `<g transform="rotate(${corner.rot} ${x} ${y})">
+      <text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="middle"
+            font-family="${FONT_FAMILY}" font-size="${C.svgSize}"
+            font-weight="700" fill="url(#gold)" stroke="${STROKE}"
+            stroke-width="6" paint-order="stroke">${g}</text>
+    </g>`;
+  };
 
   const labelSvg = label
     ? `<text x="${WIDTH / 2}" y="${lb.baseline}" text-anchor="middle"
              font-family="${FONT_FAMILY}" font-size="${lb.size}"
-             font-weight="700" letter-spacing="6"
+             font-weight="700" letter-spacing="5"
              fill="url(#gold)" stroke="${STROKE}" stroke-width="4"
              paint-order="stroke">${esc(label)}</text>`
     : '';
@@ -158,24 +182,7 @@ function textOverlaySVG(bigGlyph, smallGlyph, label) {
       <stop offset="1"   stop-color="${GOLD_DARK}"/>
     </linearGradient>
   </defs>
-
-  <!-- Große Glyphe oben links -->
-  <text x="${bg.x}" y="${bg.baseline}" text-anchor="start"
-        font-family="${FONT_FAMILY}" font-size="${bg.size}"
-        font-weight="700"
-        fill="url(#gold)" stroke="${STROKE}" stroke-width="7"
-        paint-order="stroke">${esc(bigGlyph)}</text>
-
-  <!-- Kleine Glyphe unten rechts, um 180° gedreht -->
-  <g transform="rotate(180 ${sg.cx} ${sg.cy})">
-    <text x="${sg.cx}" y="${sg.cy}" text-anchor="middle"
-          dominant-baseline="middle"
-          font-family="${FONT_FAMILY}" font-size="${sg.size}"
-          font-weight="700"
-          fill="url(#gold)" stroke="${STROKE}" stroke-width="5"
-          paint-order="stroke">${esc(smallGlyph)}</text>
-  </g>
-
+  ${CORNERS.map(cornerText).join('\n  ')}
   ${labelSvg}
 </svg>`);
 }
@@ -221,30 +228,39 @@ function glyphsAvailable() {
   return requiredGlyphs().every((n) => fs.existsSync(glyphPath(n)));
 }
 
-/** Composite-Op für die große Glyphe oben links (Bild). */
-async function bigGlyphImageOp(name) {
-  const cfg = LAYOUT.bigGlyphImg;
-  const buffer = await sharp(glyphPath(name))
-    .resize({ height: cfg.height, fit: 'inside' })
-    .png()
-    .toBuffer();
-  return { input: buffer, left: cfg.x, top: cfg.y };
+/** Composite-Op für die goldene Glyphe (Bild) in einer bestimmten Ecke. */
+async function cornerGlyphImageOp(name, corner) {
+  const C = LAYOUT.corner;
+  let pipeline = sharp(glyphPath(name)).resize({ height: C.height, fit: 'inside' });
+  if (corner.rot) pipeline = pipeline.rotate(180);
+  const buffer = await pipeline.png().toBuffer();
+  const meta = await sharp(buffer).metadata();
+  const left =
+    corner.xAlign === 'left' ? C.marginX : WIDTH - C.marginX - meta.width;
+  const top =
+    corner.yAlign === 'top' ? C.marginY : HEIGHT - C.marginY - meta.height;
+  return { input: buffer, left, top };
 }
 
-/** Composite-Op für die kleine, um 180° gedrehte Glyphe unten rechts (Bild). */
-async function smallGlyphImageOp(name) {
-  const cfg = LAYOUT.smallGlyphImg;
-  const buffer = await sharp(glyphPath(name))
-    .resize({ height: cfg.height, fit: 'inside' })
-    .rotate(180)
-    .png()
-    .toBuffer();
+/** Composite-Op für das kleine Suit-Symbol an der Glyphe einer Ecke. */
+async function cornerPipOp(color, corner) {
+  const C = LAYOUT.corner;
+  let pipeline = sharp(path.join(INPUT_DIR, `symbol_${color}.png`)).resize(
+    C.pipBox,
+    C.pipBox,
+    { fit: 'inside' }
+  );
+  if (corner.rot) pipeline = pipeline.rotate(180);
+  const buffer = await pipeline.png().toBuffer();
   const meta = await sharp(buffer).metadata();
-  return {
-    input: buffer,
-    left: WIDTH - cfg.marginRight - meta.width,
-    top: HEIGHT - cfg.marginBottom - meta.height,
-  };
+  const left =
+    corner.xAlign === 'left' ? C.marginX : WIDTH - C.marginX - meta.width;
+  // Oben: Symbol unter der Zahl. Unten: Symbol über der (gedrehten) Zahl.
+  const top =
+    corner.yAlign === 'top'
+      ? C.marginY + C.height + C.pipGap
+      : HEIGHT - C.marginY - C.height - C.pipGap - meta.height;
+  return { input: buffer, left, top };
 }
 
 /* ------------------------------------------------------------------ *
@@ -259,6 +275,24 @@ async function buildBaseTemplate() {
     .toBuffer();
 }
 
+/** Fügt die Glyphe (Zahl bzw. Z/N) in alle vier Ecken ein. */
+async function addCornerGlyphs(composites, glyph, color, withPip) {
+  if (GLYPH_MODE) {
+    for (const corner of CORNERS) {
+      // Pip zuerst (liegt unter der Zahl), dann die Zahl darüber.
+      if (withPip && LAYOUT.corner.withPip) {
+        composites.push(await cornerPipOp(color, corner));
+      }
+      composites.push(await cornerGlyphImageOp(glyph, corner));
+    }
+  } else {
+    // SVG-Fallback: Zahlen in allen Ecken in einem Overlay.
+    if (withPip && LAYOUT.corner.withPip) {
+      for (const corner of CORNERS) composites.push(await cornerPipOp(color, corner));
+    }
+  }
+}
+
 /** Zahlenkarte (z. B. blue_7). */
 async function buildNumberCard(baseTemplate, color, number, outFile) {
   const L = LAYOUT;
@@ -268,43 +302,16 @@ async function buildNumberCard(baseTemplate, color, number, outFile) {
     L.centerSymbol.box,
     L.centerSymbol.box
   );
-  const smallSymTL = await fitImage(
-    `symbol_${color}.png`,
-    L.smallSymTopLeft.box,
-    L.smallSymTopLeft.box
-  );
-  const smallSymBR = await fitImage(
-    `symbol_${color}.png`,
-    L.smallSymBottomRight.box,
-    L.smallSymBottomRight.box
-  );
-
   const centerX = (WIDTH - L.centerSymbol.box) / 2;
   const centerY = (HEIGHT - L.centerSymbol.box) / 2;
 
   const composites = [
     centerInBox(centerSym, centerX, centerY, L.centerSymbol.box, L.centerSymbol.box),
-    centerInBox(
-      smallSymTL,
-      L.smallSymTopLeft.x,
-      L.smallSymTopLeft.y,
-      L.smallSymTopLeft.box,
-      L.smallSymTopLeft.box
-    ),
-    centerInBox(
-      smallSymBR,
-      L.smallSymBottomRight.x,
-      L.smallSymBottomRight.y,
-      L.smallSymBottomRight.box,
-      L.smallSymBottomRight.box
-    ),
   ];
 
-  if (GLYPH_MODE) {
-    composites.push(await bigGlyphImageOp(String(number)));
-    composites.push(await smallGlyphImageOp(String(number)));
-  } else {
-    composites.push({ input: textOverlaySVG(String(number), String(number), null), left: 0, top: 0 });
+  await addCornerGlyphs(composites, String(number), color, true);
+  if (!GLYPH_MODE) {
+    composites.push({ input: textOverlaySVG(String(number), null), left: 0, top: 0 });
   }
 
   await sharp(baseTemplate)
@@ -328,12 +335,12 @@ async function buildSpecialCard(baseTemplate, kind, color, outFile) {
     centerInBox(figure, figX, L.centerFigure.top, L.centerFigure.boxW, L.centerFigure.boxH),
   ];
 
+  // Bei Sonderkarten Z/N in allen Ecken, aber ohne kleines Symbol.
+  await addCornerGlyphs(composites, glyph, color, false);
   if (GLYPH_MODE) {
-    composites.push(await bigGlyphImageOp(glyph));
-    composites.push(await smallGlyphImageOp(glyph));
     composites.push({ input: labelOverlaySVG(label), left: 0, top: 0 });
   } else {
-    composites.push({ input: textOverlaySVG(glyph, glyph, label), left: 0, top: 0 });
+    composites.push({ input: textOverlaySVG(glyph, label), left: 0, top: 0 });
   }
 
   await sharp(baseTemplate)
