@@ -76,10 +76,13 @@ function buildAssets(theme) {
     size: '1024x1536',
     transparent: false,
     prompt:
-      `Ein kunstvoller Spielkarten-Rahmen im Hochformat. Dunkler Hintergrund, ` +
-      `verzierter goldener Zierrahmen passend zum Thema. Die MITTE bleibt ruhig ` +
-      `und weitgehend frei, damit später ein Symbol oder eine Figur daraufgesetzt ` +
-      `werden kann. ${s}`,
+      `Ein senkrechtes Spielkarten-Hintergrundbild, formatfüllend. Dunkle, ` +
+      `stimmungsvolle Atmosphäre passend zum Thema mit sanfter Vignette. ` +
+      `WICHTIG: KEIN Zierrahmen, KEINE Rahmenleiste, KEINE Ornamente oder ` +
+      `Verzierungen an den Rändern und besonders NICHT in den vier Ecken – ` +
+      `die Ecken und der äußere Rand bleiben ruhig, dunkel und frei, damit dort ` +
+      `später Zahlen platziert werden können. Die Mitte bleibt ebenfalls ruhig, ` +
+      `damit ein Symbol oder eine Figur daraufgesetzt werden kann. ${s}`,
   });
 
   // 2) Symbole (transparent, je Farbe).

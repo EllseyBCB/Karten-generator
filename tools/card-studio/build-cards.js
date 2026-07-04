@@ -64,19 +64,19 @@ const LAYOUT = {
   // Oben aufrecht, unten um 180° gedreht – wie bei Spielkarten, damit die
   // Zahl aus jeder Blickrichtung lesbar ist.
   corner: {
-    height: 126,   // Zielhöhe der Eck-Glyphe (Bild-Modus)
-    svgSize: 120,  // Schriftgröße im SVG-Fallback
-    marginX: 48,   // Abstand vom linken/rechten Kartenrand
-    marginY: 44,   // Abstand vom oberen/unteren Kartenrand
-    pipBox: 60,    // kleines Suit-Symbol direkt an der Zahl
+    height: 118,   // Zielhöhe der Eck-Glyphe (Bild-Modus)
+    svgSize: 112,  // Schriftgröße im SVG-Fallback
+    marginX: 62,   // Abstand vom linken/rechten Kartenrand
+    marginY: 58,   // Abstand vom oberen/unteren Kartenrand
+    pipBox: 56,    // kleines Suit-Symbol direkt an der Zahl
     pipGap: 12,    // Abstand Zahl ↔ Symbol
     withPip: true, // Zahlenkarten: kleines Symbol an jeder Ecke
   },
   // Großes Symbol / Figur mittig
   centerSymbol: { box: 360 },
   centerFigure: { boxW: 480, boxH: 620, top: 300 },
-  // Label unten (ZAUBERER / NARR)
-  label: { baseline: 1050, size: 66 },
+  // Label unten (ZAUBERER / NARR) – auf show:false ausgeblendet.
+  label: { baseline: 1050, size: 66, show: false },
 };
 
 // Die vier Ecken: Ausrichtung + Drehung.
@@ -340,10 +340,11 @@ async function buildSpecialCard(baseTemplate, kind, color, outFile) {
 
   // Bei Sonderkarten Z/N in allen Ecken, aber ohne kleines Symbol.
   await addCornerGlyphs(composites, glyph, color, false);
+  const labelText = LAYOUT.label.show ? label : null;
   if (GLYPH_MODE) {
-    composites.push({ input: labelOverlaySVG(label), left: 0, top: 0 });
+    if (labelText) composites.push({ input: labelOverlaySVG(labelText), left: 0, top: 0 });
   } else {
-    composites.push({ input: textOverlaySVG(glyph, label), left: 0, top: 0 });
+    composites.push({ input: textOverlaySVG(glyph, labelText), left: 0, top: 0 });
   }
 
   await sharp(baseTemplate)
