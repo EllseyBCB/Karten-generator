@@ -6,12 +6,13 @@
   "type": "commonjs",
   "main": "build-cards.js",
   "scripts": {
+    "generate": "node generate-art.js",
     "glyphs": "node slice-glyphs.js",
     "build": "node build-cards.js",
     "start": "node build-cards.js"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "dependencies": {
     "sharp": "^0.33.5"

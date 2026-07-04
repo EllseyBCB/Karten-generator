@@ -3,10 +3,14 @@
 Lokales Tool, das aus wenigen PNG-Basisgrafiken automatisch ein komplettes
 Wizard-Kartendeck für das Spiel **Zaubertisch** erzeugt.
 
-- **Keine KI-Generierung** – es werden ausschließlich deine vorhandenen PNGs
-  zusammengesetzt. Die goldenen Zahlen und Buchstaben stammen aus deinem
-  eigenen Glyphen-Sheet (siehe unten); nur die Beschriftung
-  „ZAUBERER"/„NARR" wird als scharfes Vektor-Overlay ergänzt.
+- **Deck-Bau ohne KI** – der eigentliche Karten-Generator setzt ausschließlich
+  PNGs deterministisch zusammen (immer gleiche Positionen). Die goldenen Zahlen
+  stammen aus deinem Glyphen-Sheet; nur „ZAUBERER"/„NARR" wird als Vektor-Text
+  ergänzt.
+- **Optionaler KI-Schritt** – auf Wunsch erzeugt ein separates Skript aus einem
+  frei wählbaren **Thema** per OpenAI (`gpt-image-1`) die Basisgrafiken
+  (Kartenrahmen, Symbole, Figuren). Kartenrahmen-Layout und Größe (750×1125)
+  bleiben dabei immer identisch.
 - Alle Karten haben exakt **750 × 1125 px**.
 - Fantasy-Stil, dunkler Hintergrund (aus deinem Template), goldene Schrift –
   klar lesbar, auch auf dem iPhone.
@@ -16,7 +20,8 @@ Wizard-Kartendeck für das Spiel **Zaubertisch** erzeugt.
 
 ## 1. Installation
 
-Voraussetzung: **Node.js 16+** (`node -v` zum Prüfen).
+Voraussetzung: **Node.js 18+** (`node -v` zum Prüfen; der KI-Schritt nutzt
+`fetch`, das ab Node 18 verfügbar ist).
 
 Im Ordner des Tools die Abhängigkeiten installieren:
 
@@ -27,6 +32,20 @@ npm install
 
 Damit wird [`sharp`](https://sharp.pixelplumbing.com/) installiert (die
 Bildbibliothek, die alles zusammensetzt).
+
+---
+
+## Überblick: zwei Wege zum Deck
+
+```
+Weg A – eigene Grafiken:   input/*.png  ─────────────►  npm start ──► 60 Karten
+Weg B – per Thema (KI):    npm run generate "Thema" ─►  npm start ──► 60 Karten
+                           (erzeugt die input-Grafiken automatisch)
+```
+
+In beiden Fällen bleiben Kartenrahmen-Layout und Größe (750×1125) identisch.
+Die goldenen Zahlen kommen immer aus deinem Glyphen-Sheet (Abschnitt 2b) und
+werden vom KI-Schritt nicht verändert.
 
 ---
 
@@ -60,6 +79,50 @@ Alle folgenden PNG-Dateien müssen im Ordner **`input/`** liegen:
 
 Fehlt beim Start eine Datei, bricht das Tool mit einer verständlichen
 Fehlermeldung ab und listet die fehlenden Dateien auf.
+
+---
+
+## 2a. Basisgrafiken per Thema erzeugen (optional, KI)
+
+Statt die Grafiken selbst zu malen, kannst du sie aus einem **Thema**
+generieren lassen. Dabei entstehen automatisch alle 13 Basisgrafiken
+(1 Kartenrahmen, 4 Symbole, 4 Zauberer, 4 Narren) und landen in `input/`.
+
+**Voraussetzung:** ein OpenAI-API-Key mit Zugriff auf `gpt-image-1`.
+
+```bash
+# 1) API-Key setzen (macOS/Linux)
+export OPENAI_API_KEY="sk-..."
+
+# 2) Grafiken zum Thema erzeugen
+npm run generate -- "Drachen und Eis"
+#   oder direkt:  node generate-art.js "Drachen und Eis"
+
+# 3) Deck bauen
+npm start
+```
+
+Nützliche Optionen:
+
+- **Nur die Prompts ansehen** (nichts wird erzeugt, kein Key nötig):
+  ```bash
+  node generate-art.js "Drachen und Eis" --dry-run
+  ```
+- **Qualität steuern** (`low` | `medium` | `high`, Standard `medium`):
+  ```bash
+  CARD_QUALITY=high npm run generate -- "Unterwasserwelt"
+  ```
+
+Hinweise:
+- Die Generierung dauert je nach Qualität einige Minuten (13 Bilder).
+- Bereits vorhandene Dateien in `input/` mit gleichem Namen werden ersetzt.
+  Dein **Glyphen-Sheet und die Zahlen bleiben unberührt.**
+- Symbole und Figuren werden mit transparentem Hintergrund erzeugt, damit
+  der Kartenrahmen durchscheint.
+- Kosten entstehen pro erzeugtem Bild gemäß deinem OpenAI-Tarif.
+
+Die Prompts (Stil, Farben, Motive) lassen sich oben in `generate-art.js`
+in `buildAssets()` / `styleSuffix()` anpassen.
 
 ---
 
