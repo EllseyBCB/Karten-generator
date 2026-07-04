@@ -4,8 +4,9 @@ Lokales Tool, das aus wenigen PNG-Basisgrafiken automatisch ein komplettes
 Wizard-Kartendeck für das Spiel **Zaubertisch** erzeugt.
 
 - **Keine KI-Generierung** – es werden ausschließlich deine vorhandenen PNGs
-  zusammengesetzt und Text (Zahlen, Buchstaben, Beschriftung) als scharfes
-  Vektor-Overlay ergänzt.
+  zusammengesetzt. Die goldenen Zahlen und Buchstaben stammen aus deinem
+  eigenen Glyphen-Sheet (siehe unten); nur die Beschriftung
+  „ZAUBERER"/„NARR" wird als scharfes Vektor-Overlay ergänzt.
 - Alle Karten haben exakt **750 × 1125 px**.
 - Fantasy-Stil, dunkler Hintergrund (aus deinem Template), goldene Schrift –
   klar lesbar, auch auf dem iPhone.
@@ -59,6 +60,42 @@ Alle folgenden PNG-Dateien müssen im Ordner **`input/`** liegen:
 
 Fehlt beim Start eine Datei, bricht das Tool mit einer verständlichen
 Fehlermeldung ab und listet die fehlenden Dateien auf.
+
+---
+
+## 2b. Goldene Zahlen (Glyphen-Sheet)
+
+Damit die Karten deine **goldenen Zahlen 1–13 sowie Z und N** verwenden,
+gibt es einen kleinen Zwischenschritt:
+
+1. Lege dein Glyphen-Sheet als **`input/glyph_sheet.png`** ab
+   (goldene Zeichen auf schwarzem Hintergrund, Rasteranordnung:
+   Zeile 1 = `1 2 3 4 5 6 7`, Zeile 2 = `8 9 10 11 12 13`,
+   Zeile 3 = `Z N`).
+2. Führe einmalig aus:
+
+   ```bash
+   npm run glyphs
+   ```
+
+   Das Skript zerschneidet das Sheet automatisch in 15 transparente
+   Einzel-Glyphen unter `input/glyphs/` (`1.png` … `13.png`, `Z.png`,
+   `N.png`). Der schwarze Hintergrund wird dabei transparent, der Glow
+   bleibt erhalten, und kleine Zier-Ornamente über/unter den Zahlen
+   werden automatisch weggeschnitten.
+
+3. Danach das Deck bauen (`npm start`). Sind die Glyphen vorhanden,
+   nutzt der Generator automatisch die goldenen Grafiken.
+
+> **Ohne Glyphen-Sheet** funktioniert das Tool trotzdem: Dann werden die
+> Zahlen/Buchstaben als goldener Vektor-Text gerendert (Fallback).
+
+**Feineinstellung (nur falls nötig)** – oben in `slice-glyphs.js`:
+- `KEEP_ORNAMENTS = true` behält die Zier-Ornamente über/unter den Zahlen.
+- `BAND_GAP_FRACTION` steuert, wie großzügig zusammenhängende Bereiche
+  erkannt werden (kleiner = trennt Ornamente schärfer von der Zahl).
+- Passt das Raster deines Sheets nicht (7×3), lassen sich `COLS`, `ROWS`
+  und `GLYPH_MAP` anpassen.
 
 ---
 
@@ -130,9 +167,15 @@ jeweils **750 × 1125 px**.
 ## 6. Anpassen
 
 Positionen, Größen und Farben lassen sich zentral in `build-cards.js`
-oben in den Objekten `LAYOUT`, `COLORS` sowie den Farb-Konstanten
-(`GOLD`, `GOLD_DARK`, `STROKE`, `FONT_FAMILY`) ändern. Danach einfach
-`npm start` erneut ausführen.
+oben im Objekt `LAYOUT` ändern:
+- `bigGlyphImg` / `smallGlyphImg` – Zielhöhe und Position der goldenen
+  Glyphen oben links bzw. unten rechts (Bild-Modus).
+- `bigGlyph` / `smallGlyph` – dieselben Angaben für den Vektor-Fallback.
+- `centerSymbol`, `centerFigure`, `smallSymTopLeft`,
+  `smallSymBottomRight`, `label` – Symbole, Figuren und Beschriftung.
+
+Farben/Schrift der Beschriftung: `GOLD`, `GOLD_DARK`, `STROKE`,
+`FONT_FAMILY`. Danach einfach `npm start` erneut ausführen.
 
 > Für den bestmöglichen Fantasy-Look kann eine Schrift wie *Cinzel* auf dem
 > System installiert werden. Ist sie nicht vorhanden, wird automatisch eine

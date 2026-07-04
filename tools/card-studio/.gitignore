@@ -3,6 +3,7 @@ node_modules/
 
 # Deine Basisgrafiken bleiben lokal (nur Ordner wird versioniert)
 input/*.png
+input/glyphs/*.png
 
 # Generierte Karten
 output/*.png

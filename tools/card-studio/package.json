@@ -6,6 +6,7 @@
   "type": "commonjs",
   "main": "build-cards.js",
   "scripts": {
+    "glyphs": "node slice-glyphs.js",
     "build": "node build-cards.js",
     "start": "node build-cards.js"
   },

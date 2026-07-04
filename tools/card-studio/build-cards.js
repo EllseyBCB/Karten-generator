@@ -36,6 +36,10 @@ const HEIGHT = 1125;
 
 const INPUT_DIR = path.join(__dirname, 'input');
 const OUTPUT_DIR = path.join(__dirname, 'output');
+const GLYPHS_DIR = path.join(INPUT_DIR, 'glyphs');
+
+// Wird in main() gesetzt: true, wenn goldene Glyph-Bilder vorhanden sind.
+let GLYPH_MODE = false;
 
 // Farben pro Suit (nur für die Textfarbe der Eckziffern nutzbar,
 // die goldene Grundschrift bleibt aber einheitlich für Lesbarkeit).
@@ -56,10 +60,16 @@ const FONT_FAMILY =
  * ------------------------------------------------------------------ */
 
 const LAYOUT = {
-  // Große Glyphe oben links
+  // --- Glyphen als SVG-Text (Fallback, wenn keine Glyph-Bilder da sind) ---
   bigGlyph: { x: 62, baseline: 190, size: 205 },
   // Kleine Glyphe unten rechts (um 180° gedreht, wie bei Spielkarten)
   smallGlyph: { cx: 648, cy: 955, size: 112 },
+
+  // --- Glyphen als goldene Bild-Grafiken (input/glyphs/*.png) ---
+  // Große Glyphe oben links: Zielhöhe + Position der oberen linken Ecke.
+  bigGlyphImg: { height: 168, x: 56, y: 46 },
+  // Kleine Glyphe unten rechts: Zielhöhe + Ränder (wird um 180° gedreht).
+  smallGlyphImg: { height: 100, marginRight: 58, marginBottom: 92 },
   // Kleines Symbol oben links (unter der großen Zahl)
   smallSymTopLeft: { x: 66, y: 210, box: 92 },
   // Kleines Symbol unten rechts (über der kleinen Zahl)
@@ -170,6 +180,73 @@ function textOverlaySVG(bigGlyph, smallGlyph, label) {
 </svg>`);
 }
 
+/** Nur das Label unten (ZAUBERER / NARR) als transparentes SVG-Overlay. */
+function labelOverlaySVG(label) {
+  const lb = LAYOUT.label;
+  return Buffer.from(`<?xml version="1.0" encoding="UTF-8"?>
+<svg width="${WIDTH}" height="${HEIGHT}" viewBox="0 0 ${WIDTH} ${HEIGHT}"
+     xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${GOLD}"/>
+      <stop offset="0.55" stop-color="${GOLD}"/>
+      <stop offset="1" stop-color="${GOLD_DARK}"/>
+    </linearGradient>
+  </defs>
+  <text x="${WIDTH / 2}" y="${lb.baseline}" text-anchor="middle"
+        font-family="${FONT_FAMILY}" font-size="${lb.size}"
+        font-weight="700" letter-spacing="6"
+        fill="url(#gold)" stroke="${STROKE}" stroke-width="4"
+        paint-order="stroke">${esc(label)}</text>
+</svg>`);
+}
+
+/* ------------------------------------------------------------------ *
+ *  Goldene Glyph-Grafiken (input/glyphs/*.png)
+ * ------------------------------------------------------------------ */
+
+function glyphPath(name) {
+  return path.join(GLYPHS_DIR, `${name}.png`);
+}
+
+// Alle für das Deck benötigten Glyphen (Zahlen 1–13 sowie Z und N).
+function requiredGlyphs() {
+  const names = ['Z', 'N'];
+  for (let n = 1; n <= 13; n++) names.push(String(n));
+  return names;
+}
+
+// Glyph-Modus aktiv, wenn alle Glyph-Bilder vorhanden sind.
+function glyphsAvailable() {
+  return requiredGlyphs().every((n) => fs.existsSync(glyphPath(n)));
+}
+
+/** Composite-Op für die große Glyphe oben links (Bild). */
+async function bigGlyphImageOp(name) {
+  const cfg = LAYOUT.bigGlyphImg;
+  const buffer = await sharp(glyphPath(name))
+    .resize({ height: cfg.height, fit: 'inside' })
+    .png()
+    .toBuffer();
+  return { input: buffer, left: cfg.x, top: cfg.y };
+}
+
+/** Composite-Op für die kleine, um 180° gedrehte Glyphe unten rechts (Bild). */
+async function smallGlyphImageOp(name) {
+  const cfg = LAYOUT.smallGlyphImg;
+  const buffer = await sharp(glyphPath(name))
+    .resize({ height: cfg.height, fit: 'inside' })
+    .rotate(180)
+    .png()
+    .toBuffer();
+  const meta = await sharp(buffer).metadata();
+  return {
+    input: buffer,
+    left: WIDTH - cfg.marginRight - meta.width,
+    top: HEIGHT - cfg.marginBottom - meta.height,
+  };
+}
+
 /* ------------------------------------------------------------------ *
  *  Karten-Erzeugung
  * ------------------------------------------------------------------ */
@@ -205,27 +282,33 @@ async function buildNumberCard(baseTemplate, color, number, outFile) {
   const centerX = (WIDTH - L.centerSymbol.box) / 2;
   const centerY = (HEIGHT - L.centerSymbol.box) / 2;
 
-  const overlay = textOverlaySVG(String(number), String(number), null);
+  const composites = [
+    centerInBox(centerSym, centerX, centerY, L.centerSymbol.box, L.centerSymbol.box),
+    centerInBox(
+      smallSymTL,
+      L.smallSymTopLeft.x,
+      L.smallSymTopLeft.y,
+      L.smallSymTopLeft.box,
+      L.smallSymTopLeft.box
+    ),
+    centerInBox(
+      smallSymBR,
+      L.smallSymBottomRight.x,
+      L.smallSymBottomRight.y,
+      L.smallSymBottomRight.box,
+      L.smallSymBottomRight.box
+    ),
+  ];
+
+  if (GLYPH_MODE) {
+    composites.push(await bigGlyphImageOp(String(number)));
+    composites.push(await smallGlyphImageOp(String(number)));
+  } else {
+    composites.push({ input: textOverlaySVG(String(number), String(number), null), left: 0, top: 0 });
+  }
 
   await sharp(baseTemplate)
-    .composite([
-      centerInBox(centerSym, centerX, centerY, L.centerSymbol.box, L.centerSymbol.box),
-      centerInBox(
-        smallSymTL,
-        L.smallSymTopLeft.x,
-        L.smallSymTopLeft.y,
-        L.smallSymTopLeft.box,
-        L.smallSymTopLeft.box
-      ),
-      centerInBox(
-        smallSymBR,
-        L.smallSymBottomRight.x,
-        L.smallSymBottomRight.y,
-        L.smallSymBottomRight.box,
-        L.smallSymBottomRight.box
-      ),
-      { input: overlay, left: 0, top: 0 },
-    ])
+    .composite(composites)
     .png()
     .toFile(path.join(OUTPUT_DIR, outFile));
 }
@@ -241,13 +324,20 @@ async function buildSpecialCard(baseTemplate, kind, color, outFile) {
   const figure = await fitImage(figureFile, L.centerFigure.boxW, L.centerFigure.boxH);
   const figX = (WIDTH - L.centerFigure.boxW) / 2;
 
-  const overlay = textOverlaySVG(glyph, glyph, label);
+  const composites = [
+    centerInBox(figure, figX, L.centerFigure.top, L.centerFigure.boxW, L.centerFigure.boxH),
+  ];
+
+  if (GLYPH_MODE) {
+    composites.push(await bigGlyphImageOp(glyph));
+    composites.push(await smallGlyphImageOp(glyph));
+    composites.push({ input: labelOverlaySVG(label), left: 0, top: 0 });
+  } else {
+    composites.push({ input: textOverlaySVG(glyph, glyph, label), left: 0, top: 0 });
+  }
 
   await sharp(baseTemplate)
-    .composite([
-      centerInBox(figure, figX, L.centerFigure.top, L.centerFigure.boxW, L.centerFigure.boxH),
-      { input: overlay, left: 0, top: 0 },
-    ])
+    .composite(composites)
     .png()
     .toFile(path.join(OUTPUT_DIR, outFile));
 }
@@ -300,6 +390,14 @@ async function main() {
 
   checkInputs();
   prepareOutput();
+
+  GLYPH_MODE = glyphsAvailable();
+  if (GLYPH_MODE) {
+    console.log('   Schrift: goldene Glyph-Grafiken aus input/glyphs/');
+  } else {
+    console.log('   Schrift: SVG-Text (Fallback)');
+    console.log('   Tipp: für die goldenen Zahlen "npm run glyphs" ausführen.');
+  }
 
   const baseTemplate = await buildBaseTemplate();
   let count = 0;
