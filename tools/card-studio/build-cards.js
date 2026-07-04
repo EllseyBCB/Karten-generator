@@ -80,11 +80,14 @@ const LAYOUT = {
 };
 
 // Die vier Ecken: Ausrichtung + Drehung.
+// Für ein Online-Kartenspiel stehen ALLE Ecken aufrecht (rot: 0), damit die
+// Zahl aus normaler Blickrichtung überall lesbar ist. Wer klassische
+// Spielkarten möchte (untere Ecken um 180° gedreht), setzt bei BL/BR rot: 180.
 const CORNERS = [
   { id: 'TL', rot: 0, xAlign: 'left', yAlign: 'top' },
   { id: 'TR', rot: 0, xAlign: 'right', yAlign: 'top' },
-  { id: 'BL', rot: 180, xAlign: 'left', yAlign: 'bottom' },
-  { id: 'BR', rot: 180, xAlign: 'right', yAlign: 'bottom' },
+  { id: 'BL', rot: 0, xAlign: 'left', yAlign: 'bottom' },
+  { id: 'BR', rot: 0, xAlign: 'right', yAlign: 'bottom' },
 ];
 
 /* ------------------------------------------------------------------ *
